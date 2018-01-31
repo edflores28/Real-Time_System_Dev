@@ -42,23 +42,30 @@ void loop()
         // convert the string to morse code.
         if (recv == 13)
         {
+        	// Only process the input if the library is
+        	// not busy.
         	if (!morse.busy)
         	{
-        	Serial.println("User input: " + input);
-        	// Convert the string into a char array
-        	input.toCharArray(buffer,MAX_BUFFER);
+        		Serial.println("User input: " + input);
+				// Convert the string into a char array
+				input.toCharArray(buffer,MAX_BUFFER);
 
-        	// Queue up the message for processing.
-        	morse.send(buffer);
+				// Queue up the message for processing.
+				morse.send(buffer);
 
-        	// Clear out the buffer and string
-        	memset(buffer, 0, sizeof(buffer));
-        	input = "";
+				// Clear out the buffer and string
+				memset(buffer, 0, sizeof(buffer));
+				input = "";
+        	}
+        	// Print a message if message is thrown out.
+        	else
+        	{
+        		Serial.println("Input thrown out");
         	}
         }
     }
 
     // Update the morse code.
     delay(300);
-	morse.update();
+    morse.update();
 }
