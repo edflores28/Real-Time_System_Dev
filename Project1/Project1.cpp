@@ -11,6 +11,13 @@ char recv = 0;
 char buffer[MAX_BUFFER];
 Morse morse(ledPin, 1200); // Morse code set at 1200WPM
 
+// Clear out the buffer and string
+void clear()
+{
+	memset(buffer, 0, sizeof(buffer));
+	input = "";
+}
+
 // Setup stuff.
 void setup()
 {
@@ -26,14 +33,19 @@ void loop()
     	// Read the incoming byte from the serial interface
         recv = Serial.read();
 
+        // Break the loop if ctrl-z is entered.
+        if (recv == 26)
+        {
+        	Serial.println("Exiting program..");
+        	exit(0);
+        }
+
         // Only keep the byte if it's a letter or number
         // than can be represented in morse code.
         // This uses the decimal representation of the
         // ASCII characters.
-        if (((recv >= 48) && (recv <= 57)) ||
-        	((recv >= 65) && (recv <= 90)) ||
-			((recv >= 97) && (recv <= 122)) ||
-			(recv == 32))
+        if (((recv >= 48) && (recv <= 57)) || ((recv >= 65) && (recv <= 90)) ||
+        		((recv >= 97) && (recv <= 122)) || (recv == 32))
         {
         	input.concat(recv);
         }
@@ -53,14 +65,16 @@ void loop()
 				// Queue up the message for processing.
 				morse.send(buffer);
 
-				// Clear out the buffer and string
-				memset(buffer, 0, sizeof(buffer));
-				input = "";
+				// Clear the contents of the string and buffer.
+				clear();
         	}
         	// Print a message if message is thrown out.
         	else
         	{
         		Serial.println("Input thrown out");
+
+        		// Clear the contents of the string and buffer.
+				clear();
         	}
         }
     }
