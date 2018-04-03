@@ -11,10 +11,12 @@ class Motor:
         self.max_value = max_value
         self.min_value = min_value
         # Arming sequence
+        self.stop()
+        time.sleep(1)
         self.pi.set_servo_pulsewidth(pin, max_value)
         time.sleep(1)
         self.pi.set_servo_pulsewidth(pin, min_value)
-        time.sleep(1)
+        time.sleep(2)
         # Start in an "off" state
         self.stop()
 
