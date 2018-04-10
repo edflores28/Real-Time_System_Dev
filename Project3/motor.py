@@ -1,7 +1,6 @@
 import time
 import pigpio
 
-
 class Motor:
 
     def __init__(self, pin, min_value, max_value):
@@ -20,7 +19,7 @@ class Motor:
         # Start in an "off" state
         self.stop()
 
-    def set_pwn(self, value):
+    def set_pwm(self, value):
         self.pi.set_servo_pulsewidth(self.pin, value)
 
     def stop(self):
