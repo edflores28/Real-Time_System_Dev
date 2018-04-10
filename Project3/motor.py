@@ -25,3 +25,7 @@ class Motor:
 
     def stop(self):
         self.pi.set_servo_pulsewidth(self.pin, 0)
+
+    def stopAll(self):
+        self.stop()
+        self.pi.stop()

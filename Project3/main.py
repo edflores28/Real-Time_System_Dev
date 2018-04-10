@@ -2,6 +2,7 @@ import motor
 
 max_value = 2000
 min_value = 800
+default = 1000
 
 # MAIN
 print("Initializing motors")
@@ -11,30 +12,34 @@ motor3 = motor.Motor(23, min_value, max_value)
 motor4 = motor.Motor(25, min_value, max_value)
 
 
-print("Motors should not be spinning at this point")
-print("Enter a value between", min_value, max_value)
-print("Or just hit enter to stop the motors")
+print("Enter a value - a, d, q, e, or s")
 
 while True:
-    motor1.set_pwn(1000)
-    motor2.set_pwn(1000)
-    motor3.set_pwn(1000)
-    motor4.set_pwn(1000)
+    motor1.set_pwn(default)
+    motor2.set_pwn(default)
+    motor3.set_pwn(default)
+    motor4.set_pwn(default)
+    
     userIn = input()
-    if userIn is not None:
-        userIn = int(userIn)
-    else:
-        break
+    if userIn == "d":
+        default += 10
+    elif userIn == "e":
+        default += 100
+    elif userIn == "q":
+        default -= 100
+    elif userIn == "a":
+        default -= 10
+    elif userIn == "s":
+        motor1.stopAll()
+        motor2.stopAll()
+        motor3.stopAll()
+        motor4.stopAll()
+        break;
 
-    print("Setting motors to", userIn)
-    if userIn >= min_value and userIn <= max_value:
-        motor1.set_pwn(userIn)
-        motor2.set_pwn(userIn)
-        motor3.set_pwn(userIn)
-        motor4.set_pwn(userIn)
-    else:
-        motor1.stop()
-        motor2.stop()
-        motor3.stop()
-        motor4.stop()
-        break
+    print("Setting motors to", default)
+    if default >= min_value and default <= max_value:
+        motor1.set_pwn(default)
+        motor2.set_pwn(default)
+        motor3.set_pwn(default)
+        motor4.set_pwn(default)
+
