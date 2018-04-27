@@ -16,13 +16,15 @@ udp_queue = queue.Queue()
 
 def read_arduino(rc, imu, udp):
     while True:
-        value = ser.readline()
-        decoded = value.decode().rstrip().split(',')
+        value = ser.readline().decode()
+        print(value) 
+        udp.put(''.join(value))
+
+        decoded = value.rstrip().split(',')
         if decoded[0] == "CTL":
             rc.put(decoded[1:])
         if decoded[0] == "NAV":
             imu.put(decoded[1:])
-        udp.put(decoded)
 
 def send_message(udp, sock):
     while True:
