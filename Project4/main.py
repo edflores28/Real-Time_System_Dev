@@ -6,8 +6,9 @@ import motor
 import numpy
 
 
-max_value = 2000
-min_value = 800
+max_value = 2100
+min_value = 700
+value = 950
 
 receiver_vals = [1000, 1900]
 esc_vals = [min_value, max_value]
@@ -26,7 +27,6 @@ udp_queue = queue.Queue()
 def read_arduino(rc, imu, udp):
     while True:
         value = ser.readline().decode()
-        print(value)
         udp.put(''.join(value))
 
         decoded = value.rstrip().split(',')
@@ -44,6 +44,15 @@ def send_message(udp, sock):
         sock.sendto(b, (addr))
 
 
+def regulate(value):
+    value = int(value)
+    if value <= min_value:
+        return min_value
+    if value >= max_value:
+        return max_value
+    return value
+
+
 '''
 MAIN
 '''
@@ -58,8 +67,8 @@ worker1.start()
 
 motor1 = motor.Motor(4, min_value, max_value)
 motor2 = motor.Motor(14, min_value, max_value)
-motor3 = motor.Motor(23, min_value, max_value)
-motor4 = motor.Motor(25, min_value, max_value)
+motor3 = motor.Motor(27, min_value, max_value)
+motor4 = motor.Motor(21, min_value, max_value)
 
 motor1.set_pwm(value)
 motor2.set_pwm(value)
@@ -68,16 +77,15 @@ motor4.set_pwm(value)
 
 while True:
     ctl = ctl_queue.get()
-    yaw = ctl[0]#numpy.interp(ctl[0], receiver_vals, esc_vals)
-    print(yaw, ctl[0])
-    throttle = ctl[1]#numpy.interp(ctl[1], receiver_vals, esc_vals)
-    print(throttle, ctl[1])
-    pitch = ctl[2]#numpy.interp(ctl[2], receiver_vals, esc_vals)
-    print(pitch, ctl[2])
-    roll = ctl[3]#numpy.interp(ctl[3], receiver_vals, esc_vals)
-    print(roll, ctl[3])
-    print(nav_queue.get())
-    motor1.set_pwm(yaw)
-    motor2.set_pwm(throttle)
-    motor3.set_pwm(pitch)
-    motor4.set_pwm(roll)
+    yaw = numpy.interp(regulate(ctl[0]), receiver_vals, esc_vals)
+    print("YAW:",yaw, ctl[0])
+    throttle = numpy.interp(regulate(ctl[1]), receiver_vals, esc_vals)
+    print("THR:",throttle, ctl[1])
+    pitch = numpy.interp(regulate(ctl[2]), receiver_vals, esc_vals)
+    print("PITCH",pitch, ctl[2])
+    roll = numpy.interp(regulate(ctl[3]), receiver_vals, esc_vals)
+    print("ROLL:",roll, ctl[3])
+    motor1.set_pwm(int(yaw))
+    motor2.set_pwm(int(throttle))
+    motor3.set_pwm(int(pitch))
+    motor4.set_pwm(int(roll))
