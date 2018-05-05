@@ -9,20 +9,31 @@ class Control:
         self.kD = kD
         # Bookkeeping values
         self.integral = 0
-        self.previous_error = 0
-        self.previous_time = 0
+        self.prev_error = 0
+        self.curr_time = time.time()
+        self.prev_time = self.curr_time
 
-    def PID(self, ordered, actual):
+    def set_setpoint(self, setpoint):
+        self.setpoint = setpoint
+
+    def PID(self, feedback):
+        # Find the error
+        error = self.setpoint - feedback
         # Get the current time and compute the time change
-        millis = int(round(time.time() * 1000))
-        time_change = millis - self.previous_time
-        # Get the error between ordered and actual
-        error = ordered - actual
-        # Compute the integral and derivative
-        self.integral = self.integral + (error*time_change)
-        derivative = (error - self.previous_error) / time_change
-        # Book keeping
-        self.previous_time = millis
-        self.previous_error = error
-        # Return the value
-        return self.kP*error + self.kI*self.integral + self.kD*derivative
+        self.curr_time = time.time()
+        deltaT = self.curr_time - self.prev_time
+        # Determine error change
+        deltaE = error - self.prev_error
+        # Determine the p term
+        pTerm = self.kP * error
+        # Determine the i term
+        self.integral += error * deltaT
+        # Determine the d term
+        dTerm = 0
+        if deltaT > 0:
+            dTerm = deltaE / deltaT
+        # Bookkeeping
+        self.prev_time = self.curr_time
+        self.prev_error = error
+        # Return
+        return pTerm + (self.kI * self.integral) + (self.kD * dTerm)

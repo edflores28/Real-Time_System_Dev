@@ -7,13 +7,13 @@ import numpy
 import pid
 
 # Constants
-ESC_MAX = 2100
-ESC_MIN = 700
+ESC_MAX = 2000
+ESC_MIN = 800
 RC_MIN = 1000
 RC_MAX = 1900
 DEGREES_MIN = -20
 DEGREES_MAX = 20
-value = 950
+
 receiver_vals = [RC_MIN, RC_MAX]
 esc_vals = [ESC_MIN, ESC_MAX]
 degree_vals = [DEGREES_MIN, DEGREES_MAX]
@@ -98,12 +98,16 @@ while True:
     pitch = numpy.interp(regulate(ctl[2]), receiver_vals, degree_vals)
     # Interpolate the commanded yaw to degrees
     roll = numpy.interp(regulate(ctl[3]), receiver_vals, degree_vals)
-    # Interpolate the throttle to PWM values
-    throttle = numpy.interp(regulate(ctl[1]), receiver_vals, esc_vals)
+    # Check to see if the RC control is off
+    if ctl[1] <= 0:
+        throttle = 0
+    else:
+        # Interpolate the throttle to PWM values
+        throttle = numpy.interp(regulate(ctl[1]), receiver_vals, esc_vals)
     # Get the values from the PID
     c_yaw = yaw_pid.PID(yaw, nav[0])
     c_pitch = pitch_pid(pitch, nav[1])
     c_roll = roll_pid(roll, nav[2])
     # Update flight
     flight.set_throttle(throttle)
-    flight.set_axis(c_yaw, c_roll,c_pitch)
+    flight.set_axis(c_yaw, c_roll, c_pitch)
