@@ -14,11 +14,12 @@ class Control:
         self.prev_time = self.curr_time
 
     def set_setpoint(self, setpoint):
-        self.setpoint = setpoint
+        self.setpoint = float(setpoint)
 
     def PID(self, feedback):
+        print(self.setpoint)
         # Find the error
-        error = self.setpoint - feedback
+        error = self.setpoint - float(feedback)
         # Get the current time and compute the time change
         self.curr_time = time.time()
         deltaT = self.curr_time - self.prev_time
