@@ -5,20 +5,34 @@ import socket
 import motor
 import numpy
 import pid
+import time
+from pid_controller.pid import PID
+
 
 # Constants
 ESC_MAX = 2000
 ESC_MIN = 800
 RC_MIN = 1000
 RC_MAX = 1900
+
 DEGREES_MIN = -20
 DEGREES_MAX = 20
 
-receiver_vals = [RC_MIN, RC_MAX]
+throttle_rc_vals = [997, 1976]
+RC_MIN = throttle_rc_vals[0]
+RC_MAX = throttle_rc_vals[1]
+roll_rc_vals = [989, 1969]
+pitch_rc_vals = throttle_rc_vals
+yaw_rc_vals = [988, 1973]
+
 esc_vals = [ESC_MIN, ESC_MAX]
 degree_vals = [DEGREES_MIN, DEGREES_MAX]
 
 DEBUG = True
+
+kp = 2.5
+ki = 0.25
+kd = 0
 
 def read_arduino(rc, imu, udp):
     while True:
@@ -27,9 +41,9 @@ def read_arduino(rc, imu, udp):
 
         decoded = value.rstrip().split(',')
         if decoded[0] == "CTL":
-            rc.put(decoded[1:])
+            rc.put([float(i) for i in decoded[1:]])
         if decoded[0] == "NAV":
-            imu.put(decoded[1:])
+            imu.put([float(i) for i in decoded[1:]])
 
 
 def send_message(udp, sock):
@@ -40,12 +54,12 @@ def send_message(udp, sock):
         sock.sendto(b, (addr))
 
 
-def regulate(value):
+def regulate(value, minmax):
     value = int(value)
-    if value <= ESC_MIN:
-        return ESC_MIN
-    if value >= ESC_MAX:
-        return ESC_MAX
+    if value <= minmax[0]:
+        return minmax[0]
+    if value >= minmax[1]:
+        return minmax[1]
     return value
 
 '''
@@ -81,38 +95,41 @@ motor3 = motor.Motor(27, ESC_MIN, ESC_MAX)
 motor4 = motor.Motor(21, ESC_MIN, ESC_MAX)
 
 # Initialize the PIDs
-yaw_pid = pid.Control(kP=1)
-roll_pid = pid.Control(1, 0.05, 0)
-pitch_pid = pid.Control(1, 0.05, 0)
+rpid = PID(p=kp, i=ki, d=kd)
+ppid = PID(p=kp, i=ki, d=kd)
+ypid = PID(p=3, i=0.02, d=0)
 
-flight = motor.Flight(motor1, motor2, motor3, motor4, True)
+flight = motor.Flight(motor1, motor2, motor3, motor4, DEBUG)
+
 print("Done initializing starting forever loop")
 while True:
+    time.sleep(0.005)
     # Read the queue for the RC receiver values.
     ctl = ctl_queue.get()
     # Read the queue to get the IMU values
     nav = nav_queue.get()
     # Interpolate the commanded yaw to degrees
-    yaw = numpy.interp(regulate(ctl[0]), receiver_vals, degree_vals)
+    yaw = numpy.interp(regulate(ctl[0], yaw_rc_vals), yaw_rc_vals, degree_vals)
     # Interpolate the commanded yaw to degrees
-    pitch = numpy.interp(regulate(ctl[2]), receiver_vals, degree_vals)
+    pitch = numpy.interp(regulate(ctl[2], pitch_rc_vals), pitch_rc_vals, degree_vals)
     # Interpolate the commanded yaw to degrees
-    roll = numpy.interp(regulate(ctl[3]), receiver_vals, degree_vals)
+    roll = numpy.interp(regulate(ctl[3], roll_rc_vals), roll_rc_vals, degree_vals)
     # Interpolate the throttle to PWM values
-    throttle = numpy.interp(regulate(ctl[1]), receiver_vals, esc_vals)
+    throttle = numpy.interp(regulate(ctl[1], throttle_rc_vals), throttle_rc_vals, esc_vals)
+    # Print
     if DEBUG:
         print("IMU Values")
-        print("Yaw:", nav[0], "Pitch:", nav[1], "Roll:", nav[2])
-    # Get the values from the PID
-    # Yaw
-    yaw_pid.set_setpoint(yaw)	
-    c_yaw = yaw_pid.PID(nav[0])
-    # Pitch
-    pitch_pid.set_setpoint(pitch)
-    c_pitch = pitch_pid.PID(nav[1])
-    # Roll
-    roll_pid.set_setpoint(roll)
-    c_roll = roll_pid.PID(nav[2])
+        print("Yaw:", nav[0], "Pitch:", nav[1], "Roll:", nav[2],"\n")
+        print("CTL Values")
+        print("Yaw:", yaw, "Pitch:", pitch, "Roll:", roll, "Throttle: ", ctl[1], "\n")
+	# Set the target value
+    rpid.target = roll
+    ppid.target = pitch
+    ypid.target = yaw
     # Update flight parameters
-    flight.set_throttle(throttle)
-    flight.set_axis(c_yaw, c_roll, c_pitch)
+    flight.set_throttle(ctl[1])
+    rollp = rpid(nav[2])
+    pitchp = ppid(nav[1])
+    yawp = ypid(nav[0])
+	# Send the ESC
+    flight.set_axis(yawp, rollp, pitchp)

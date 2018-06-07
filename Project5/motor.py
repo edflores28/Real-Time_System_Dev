@@ -12,7 +12,7 @@ class Motor:
         # Arming sequence
         self.stop()
         time.sleep(1)
-        self.pi.set_servo_pulsewidth(pin, max_value)
+        self.pi.set_servo_pulsewidth(pin, min_value)
         time.sleep(1)
         self.pi.set_servo_pulsewidth(pin, min_value)
         time.sleep(2)
@@ -51,17 +51,24 @@ class Flight:
         if self.debug:
             print("PID outputs")
             print("Yaw:", yaw, "Roll", roll, "Pitch", pitch)
-            print("Throttle:", self.m1)
         # Apply pitch
-        self.m1 += pitch if pitch > 0.0 else 0.0
-        self.m2 += pitch if pitch > 0.0 else 0.0
-        self.m3 -= pitch if pitch < 0.0 else 0.0
-        self.m4 -= pitch if pitch < 0.0 else 0.0
+        # if pitch > 0.0:
+            # self.m1 += pitch 
+            # self.m2 += pitch
+        # if pitch < 0.0:
+            # self.m3 += pitch
+            # self.m4 += pitch
         # Apply roll
-        self.m1 -= roll if roll < 0.0 else 0.0
-        self.m2 += roll if roll > 0.0 else 0.0
-        self.m3 -= roll if roll < 0.0 else 0.0
-        self.m4 += roll if roll > 0.0 else 0.0		
+        # if roll > 0.0:
+            # self.m1 += roll
+            # self.m3 += roll
+        # if roll < 0.0:
+            # self.m2 += roll
+            # self.m4 += roll
+        self.m1 += roll + pitch
+        self.m2 += -roll + pitch
+        self.m3 += -roll - pitch
+        self.m4 += roll - pitch
         # DEBUG
         if self.debug:
             print("PWM Values")
